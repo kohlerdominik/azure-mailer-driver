@@ -30,7 +30,7 @@ class AzureMailerServiceProvider extends ServiceProvider
     /**
      * Maps old 'azure' transport config keys to the current format:
      *   access_key       → key
-     *   resource_name    → endpoint (https://{resource_name}.communication.azure.com)
+     *   resource_name    → endpoint (only plain short names supported, e.g. "my-resource")
      *   disable_user_tracking → disable_tracking
      */
     private function normalizeLegacyConfig(array $config): array
@@ -41,9 +41,15 @@ class AzureMailerServiceProvider extends ServiceProvider
 
         if (! isset($config['endpoint']) && isset($config['resource_name'])) {
             $name = $config['resource_name'];
-            $config['endpoint'] = str_contains($name, '.')
-                ? 'https://'.ltrim($name, '/')
-                : "https://{$name}.communication.azure.com";
+
+            if (str_contains($name, '.') || str_contains($name, '/') || str_contains($name, ':')) {
+                throw new \InvalidArgumentException(
+                    "Legacy config 'mailers.azure' only supports plain 'resource_name' (e.g. \"my-resource\"). ".
+                    "Switch your 'mailers.azure.transport' to 'acs' and move your 'endpoint' and 'key' to 'services.acs' instead."
+                );
+            }
+
+            $config['endpoint'] = "https://{$name}.communication.azure.com";
         }
 
         if (! isset($config['disable_tracking']) && isset($config['disable_user_tracking'])) {

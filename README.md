@@ -33,14 +33,12 @@ A use case of the [symfony/azure-mailer](https://github.com/symfony/azure-mailer
 
 ## 📦 Installation 
 
-First time using Azure ECS? Create your [Azure account](https://azure.com) if you don't have one already.
+First time using Azure Communication Services (ACS)? Create your [Azure account](https://azure.com) if you don't have one already.
 
-1. Download [Composer](https://getcomposer.org/doc/00-intro.md) if not already installed
-
-2. On your project directory run on the command line
-`composer require hafael/azure-mailer-driver`
-
-3. Get your Azure Communication Services endpoint and access key.
+On your project directory run on the command line
+```shell
+composer require hafael/azure-mailer-driver symfony/http-client
+```
 
 
 ## 🌟 Set mail config
@@ -105,7 +103,6 @@ Visit our Dev Site for further information regarding:
  
 ## 💡 Last change
 
-** 1.0.0
   * Modernized to use Laravel's native transport extension hook (`Mail::extend`)
   * New transport name `acs` with credentials via `config/services.php`
   * Full backwards compatibility with legacy `azure` transport and old config keys

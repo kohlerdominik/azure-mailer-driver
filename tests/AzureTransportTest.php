@@ -7,6 +7,7 @@ use Hafael\Mailer\Azure\AzureTransport;
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Mail\MailManager;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -66,6 +67,7 @@ class AzureTransportTest extends TestCase
         $this->assertInstanceOf(AzureTransport::class, $transport);
     }
 
+    #[Group('legacy-config')]
     public function test_legacy_azure_transport_with_resource_name(): void
     {
         $container = new Container;
@@ -88,7 +90,8 @@ class AzureTransportTest extends TestCase
         $this->assertSame('acs', (string) $transport);
     }
 
-    public function test_legacy_azure_transport_with_full_hostname(): void
+    #[Group('legacy-config')]
+    public function test_legacy_azure_transport_with_endpoint(): void
     {
         $container = new Container;
         $container->singleton('config', fn () => new Repository([]));
@@ -101,10 +104,54 @@ class AzureTransportTest extends TestCase
         $transport = $manager->createSymfonyTransport([
             'transport' => 'azure',
             'access_key' => 'dGVzdC1rZXk=',
-            'resource_name' => 'my-resource.communication.azure.com',
+            'endpoint' => 'https://my-resource.unitedstates.communication.azure.com',
         ]);
 
         $this->assertInstanceOf(AzureTransport::class, $transport);
+        $this->assertSame('acs', (string) $transport);
+    }
+
+    #[Group('legacy-config')]
+    public function test_legacy_azure_transport_endpoint_takes_precedence_over_resource_name(): void
+    {
+        $container = new Container;
+        $container->singleton('config', fn () => new Repository([]));
+
+        $manager = new MailManager($container);
+        $container->instance('mail.manager', $manager);
+
+        (new AzureMailerServiceProvider($container))->boot();
+
+        $transport = $manager->createSymfonyTransport([
+            'transport' => 'azure',
+            'access_key' => 'dGVzdC1rZXk=',
+            'resource_name' => 'ignored-resource',
+            'endpoint' => 'https://my-resource.unitedstates.communication.azure.com',
+        ]);
+
+        $this->assertInstanceOf(AzureTransport::class, $transport);
+        $this->assertSame('acs', (string) $transport);
+    }
+
+    #[Group('legacy-config')]
+    public function test_legacy_azure_transport_rejects_region_in_resource_name(): void
+    {
+        $container = new Container;
+        $container->singleton('config', fn () => new Repository([]));
+
+        $manager = new MailManager($container);
+        $container->instance('mail.manager', $manager);
+
+        (new AzureMailerServiceProvider($container))->boot();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("only supports plain 'resource_name'");
+
+        $manager->createSymfonyTransport([
+            'transport' => 'azure',
+            'access_key' => 'dGVzdC1rZXk=',
+            'resource_name' => 'test-resource.unitedstates',
+        ]);
     }
 
     public function test_send(): void
